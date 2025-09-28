@@ -1,12 +1,24 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import {getLoginUser} from "@/api/userController.ts";
 
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  const doubleCount = computed(() => count.value * 2)
-  function increment() {
-    count.value++
+export const useLoginUserStore = defineStore('loginUser', () => {
+  //默认值
+  const loginUser = ref<API.LoginUserVO>({
+    userName: "未登录",
+  })
+  // 获取登录用户信息
+  async function fetchLoginUser() {
+   const res = await getLoginUser();
+   if(res.data.code === 0&&res.data.data){
+     loginUser.value = res.data.data;
+   }
+  }
+  //更新用户信息
+   function setLoginUser(user:API.LoginUserVO){
+    loginUser.value = user;
   }
 
-  return { count, doubleCount, increment }
+  return { loginUser, fetchLoginUser,setLoginUser }
+
 })

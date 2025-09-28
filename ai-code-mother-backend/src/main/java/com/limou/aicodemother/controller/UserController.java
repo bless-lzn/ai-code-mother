@@ -9,10 +9,7 @@ import com.limou.aicodemother.constant.UserConstant;
 import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
-import com.limou.aicodemother.model.dto.user.UserAddRequest;
-import com.limou.aicodemother.model.dto.user.UserQueryRequest;
-import com.limou.aicodemother.model.dto.user.UserRegisterRequest;
-import com.limou.aicodemother.model.dto.user.UserUpdateRequest;
+import com.limou.aicodemother.model.dto.user.*;
 import com.limou.aicodemother.model.vo.LoginUserVO;
 import com.limou.aicodemother.model.vo.UserVO;
 import com.mybatisflex.core.paginate.Page;
@@ -61,15 +58,16 @@ public class UserController {
     /**
      * 用户 登录。
      *
-     * @param userRegisterRequest 用户登录请求
+     * @param userLoginRequest 用户登录请求
      * @return 登录用户信息
      */
 
     @PostMapping("/login")
-    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserRegisterRequest userRegisterRequest, HttpServletRequest request) {
-        ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
-        return ResultUtils.success(userService.userLogin(userRegisterRequest.getUserAccount(), userRegisterRequest.getUserPassword(), request));
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(userService.userLogin(userLoginRequest.getUserAccount(), userLoginRequest.getUserPassword(), request));
     }
+
     /**
      * 获取当前登录用户。
      *
@@ -84,7 +82,7 @@ public class UserController {
         return ResultUtils.success(userService.getLoginUserVO(loginUser));
     }
 
-
+    @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
         boolean logout = userService.userLogout(request);
         return ResultUtils.success(logout);
@@ -178,7 +176,6 @@ public class UserController {
         userVOPage.setRecords(userVOList);
         return ResultUtils.success(userVOPage);
     }
-
 
 
 }
