@@ -9,11 +9,11 @@ public interface UserConstant {
     /**
      * 默认角色
      */
-    String Default_Role="user";
+    String DEFAULT_ROLE="user";
 
     /**
      * 管理员角色
      */
-    String Admin_Role="admin";
+    String ADMIN_ROLE="admin";
     //endregion
 }

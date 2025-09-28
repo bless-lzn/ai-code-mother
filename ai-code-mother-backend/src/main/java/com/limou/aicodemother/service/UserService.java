@@ -1,9 +1,14 @@
 package com.limou.aicodemother.service;
 
+import com.limou.aicodemother.model.dto.user.UserQueryRequest;
 import com.limou.aicodemother.model.vo.LoginUserVO;
+import com.limou.aicodemother.model.vo.UserVO;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.limou.aicodemother.model.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 
 /**
  * 用户 服务层。
@@ -61,5 +66,20 @@ public interface UserService extends IService<User> {
      */
     boolean userLogout(HttpServletRequest request);
 
+    /**
+     * 将User对象转换为UserVO对象
+     * @param user 用户实体对象
+     * @return 转换后的用户VO对象
+     */
+    UserVO getUserVO(User user);
 
+    /**
+     * 将User对象列表转换为UserVO对象列表
+     * @param userList 用户实体对象列表
+     * @return 转换后的用户VO对象列表
+     */
+    List<UserVO> getUserVOList(List<User> userList);
+
+    QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
 }
+
