@@ -13,7 +13,7 @@
         <a-menu
             v-model:selectedKeys="current"
             mode="horizontal"
-            :items="originItems"
+            :items="menuItems"
             @click="doMenuClick"
         />
       </a-col>
@@ -46,11 +46,11 @@
   </div>
 </template>
 <script lang="ts" setup>
-import {h, ref} from 'vue';
+import {computed, h, ref} from 'vue';
 import {MailOutlined, AppstoreOutlined, SettingOutlined, HomeOutlined,LogoutOutlined} from '@ant-design/icons-vue';
 import {MenuProps, message} from 'ant-design-vue';
 import router from "@/router";
-import {useLoginUserStore} from "@/stores/counter.ts";
+import {useLoginUserStore} from "@/stores/loginUser.ts";
 import {userLogout} from "@/api/userController.ts";
 import UserManagePage from "@/pages/admin/UserManagePage.vue";
 
@@ -75,6 +75,26 @@ const originItems = [
     title: '用户管理',
   },
 ]
+
+
+//过滤菜单项
+const filterMenus = (menus=[] as MenuProps['items']) => {
+  return menus?.filter((menu) => {
+    const menuKey = menu?.key as string;
+    if (menuKey?.startsWith('/admin')) {
+      const loginUser=loginUserStore.loginUser;
+      if(!loginUser||loginUser.userRole!='admin'){
+        return false;
+      }
+
+    }
+    return true;
+  });
+};
+const menuItems=computed<MenuProps['items']>(() => {
+  return filterMenus(originItems);
+})
+
 
 const loginUserStore = useLoginUserStore();
 
