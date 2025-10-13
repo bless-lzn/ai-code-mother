@@ -3,7 +3,12 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-application.yml
+### CUSTOM ###
+application-local.yml
+aplication-dev.yml
+# 忽略tmp目录及其所有内容
+tmp/
+
 ### STS ###
 .apt_generated
 .classpath

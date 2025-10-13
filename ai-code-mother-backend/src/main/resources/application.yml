@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: ai-code-mother-backend
+#  datasource:
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://localhost:3306/ai_code
+#    username: root
+#    password: LZNlzn123.
+#
+#      # Redis 配置
+#  data:
+#    redis:
+#      database: 1
+#      host: 127.0.0.1
+#      port: 6379
+#      timeout: 5000
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  session:
+    timeout: 2592000
+  profiles:
+    active: dev
+server:
+  port: 8123
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        # session过期时间30天
+        max-age: 2592000
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.limou.aicodemother.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# AI
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.open-ai.chat-model.api-key}
+      model-name: deepseek-chat
+      log-requests: true
+      log-responses: true
+      strict-json-schema: true
+      response-format: json_object
+    streaming-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.open-ai.chat-model.api-key}
+      model-name: deepseek-chat
+      max-tokens: 8192
+      log-requests: true
+      log-responses: true
