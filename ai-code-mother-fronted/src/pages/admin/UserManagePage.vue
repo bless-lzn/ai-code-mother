@@ -1,26 +1,37 @@
 <template>
   <div id="userManagePage">
-    <div id="userManagePage">
-      <!-- 搜索表单 -->
-      <a-form layout="inline" :model="searchParams" @finish="doSearch">
-        <a-form-item label="账号">
-          <a-input v-model:value="searchParams.userAccount" placeholder="输入账号" />
-        </a-form-item>
-        <a-form-item label="用户名">
-          <a-input v-model:value="searchParams.userName" placeholder="输入用户名" />
-        </a-form-item>
-        <a-form-item>
-          <a-button type="primary" html-type="submit">搜索</a-button>
-        </a-form-item>
-      </a-form>
-      <a-divider />
-      <!-- 表格 -->
-    </div>
 
-    <a-table :columns="columns"
-             :data-source="dataList"
-             :pagination="pagination"
-             @change="doTableChange">
+    <!-- 搜索表单 -->
+    <a-form layout="inline" :model="searchParams" @finish="doSearch">
+      <a-form-item label="账号">
+        <a-input v-model:value="searchParams.userAccount" placeholder="输入账号"/>
+      </a-form-item>
+      <a-form-item label="用户名">
+        <a-input v-model:value="searchParams.userName" placeholder="输入用户名"/>
+      </a-form-item>
+      <a-form-item>
+        <a-button type="primary" html-type="submit">搜索</a-button>
+      </a-form-item>
+    </a-form>
+    <a-divider/>
+    <!-- 表格 -->
+    <div style="margin-bottom: 16px">
+      <a-button type="primary" :disabled="!hasSelected" :loading="state.loading" @click="deleteSelected" >
+        Reload
+      </a-button>
+      <span style="margin-left: 8px">
+        <template v-if="hasSelected">
+          {{ `Selected ${state.selectedRowKeys.length} items` }}
+        </template>
+      </span>
+    </div>
+    <a-table
+        :row-selection="{ selectedRowKeys: state.selectedRowKeys, onChange: onSelectChange }"
+        :columns="columns"
+        :data-source="dataList"
+        :pagination="pagination"
+        :row-key="(record) => record.id"
+        @change="doTableChange">
       <template #bodyCell="{ column, record }">
         <!--        avatar头像显示-->
         <template v-if="column.dataIndex==='userAvatar'">
@@ -93,7 +104,6 @@ const columns = [
 ]
 
 
-
 //数据
 const dataList = ref<API.UserVO[]>([])
 const total = ref<number>(0)
@@ -117,7 +127,9 @@ const fetchData = async () => {
   const res = await listUserVoByPage(searchParams)
   if (res.data.code === 0 && res.data.data) {
     dataList.value = res.data.data.records ?? []
-    total.value = res.data.data.totalPage ?? 0
+    // state.selectedRowKeys = dataList.value.map(item => item.id as number)??[]
+    // console.log( state.selectedRowKeys)
+    total.value = Number(res.data.data.totalPage) ?? 0
   } else {
     message.error('获取用户列表失败')
   }
@@ -129,7 +141,7 @@ const pagination = computed(() => {
     pageSize: searchParams.pageSize,
     total: total.value,
     showSizeChanger: true,
-    showTotal: (total:any) => `共 ${total} 条`,
+    showTotal: (total: any) => `共 ${total} 条`,
   }
 })
 // 表格变化之后，重新获取数据
@@ -164,10 +176,35 @@ onMounted(() => {
   fetchData()
 })
 
+const state = reactive<{
+  selectedRowKeys: number[];
+  loading: boolean;
+}>({
+  selectedRowKeys: [], // Check here to configure the default column
+  loading: false,
+});
+const hasSelected = computed(() => state.selectedRowKeys.length > 0);
+
+const deleteSelected = () => {
+  state.loading = true;
+  // ajax request after empty completing
+  console.log('selectedRowKeys changed: ',state.selectedRowKeys.values() );
+    state.loading = false;
+    state.selectedRowKeys = [];
+    fetchData()
+  ;
+};
+
+// type Key = string | number;
+const onSelectChange = (selectedRowKeys: number[]) => {
+  console.log('selectedRowKeys changed: ', selectedRowKeys);
+
+  state.selectedRowKeys = selectedRowKeys;
+};
+
 </script>
 <style scoped>
 #userManagePage {
-  text-align: center;
 }
 </style>
 
