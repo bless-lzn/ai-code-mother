@@ -15,6 +15,8 @@ public interface AiCodeGeneratorService {
      *
      * @param userMessage 用户输入
      * @return 生成的 HTML 代码
+     * fromResource：从文件中读取提示词
+     *
      */
     @SystemMessage(fromResource = "prompt/codegen-html-system-prompt.txt")
     HtmlCodeResult generateHtmlCode(String userMessage);
