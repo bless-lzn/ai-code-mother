@@ -34,7 +34,7 @@ public class AiCodeGeneratorFacade {
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
-                yield  CodeFileSaverExecutor.executeSaver(htmlCodeResult, CodeGenTypeEnum.HTML);
+                yield CodeFileSaverExecutor.executeSaver(htmlCodeResult, CodeGenTypeEnum.HTML);
             }
             case MULTI_FILE -> {
                 MultiFileCodeResult multiFileCodeResult = aiCodeGeneratorService.generateMultiFileCode(userMessage);
@@ -69,7 +69,10 @@ public class AiCodeGeneratorFacade {
 
 
     /**
-     * 获取多个文件代码并保存
+     * 处理代码流
+     * @param codeStream
+     * @param codeGenType
+     * 通用的流式代码处理方法
      */
     private Flux<String> processCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenType) {
         //2.得到Flue结果，将结果进行builder,整合和保存
@@ -92,19 +95,19 @@ public class AiCodeGeneratorFacade {
     /**
      * 获取多个文件代码并保存
      */
-//    private Flux<String> generateAndSaveMultiFileCodeStream(String userMessage) {
-//        //1.调用AI
-//        Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
-//        return processCodeStream(result, CodeGenTypeEnum.MULTI_FILE);
-//    }
+    private Flux<String> generateAndSaveMultiFileCodeStream(String userMessage) {
+        //1.调用AI
+        Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
+        return processCodeStream(result, CodeGenTypeEnum.MULTI_FILE);
+    }
 
     /**
      * 生成HTML代码并保存
      */
-//    private Flux<String> generateAndSaveHtmlCodeStream(String userMessage) {
-//        Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
-//        return this.processCodeStream(result, CodeGenTypeEnum.HTML);
-//    }
+    private Flux<String> generateAndSaveHtmlCodeStream(String userMessage) {
+        Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
+        return this.processCodeStream(result, CodeGenTypeEnum.HTML);
+    }
 
 
     /**

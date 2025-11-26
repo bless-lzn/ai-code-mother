@@ -9,7 +9,7 @@ import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-
+@Deprecated
 public class CodeFileSaver {
     //构建唯一的目标路径  tmp/code_output/bizType_雪花ID
     // 修改为
