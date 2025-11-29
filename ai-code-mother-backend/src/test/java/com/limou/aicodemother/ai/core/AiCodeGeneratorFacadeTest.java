@@ -17,13 +17,13 @@ class AiCodeGeneratorFacadeTest {
 private AiCodeGeneratorFacade aiCodeGeneratorFacade;
     @Test
     void generateAndSaveCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成一个留言板,不超过20行代码", CodeGenTypeEnum.HTML);
+        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成一个留言板,不超过20行代码", CodeGenTypeEnum.HTML,1L);
         Assertions.assertNotNull(file);
     }
 
     @Test
     void generateAndSaveCodeStream() {
-        Flux<String> stringFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream("生成一个留言板,不超过20行代码", CodeGenTypeEnum.HTML);
+        Flux<String> stringFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream("生成一个留言板,不超过20行代码", CodeGenTypeEnum.HTML,1L);
         List<String> block = stringFlux.collectList().block();
         String join = String.join("", block);
         System.out.println( join);

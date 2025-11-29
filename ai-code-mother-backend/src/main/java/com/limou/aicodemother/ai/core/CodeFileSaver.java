@@ -17,8 +17,8 @@ public class CodeFileSaver {
     /**
      * 保存HtmlCodeResult代码
      */
-    public static File saveHtmlCodeResult(HtmlCodeResult htmlCodeResult) {
-        String baseDirPath = buildUniqueDir(CodeGenTypeEnum.HTML.getValue());
+    public static File saveHtmlCodeResult(HtmlCodeResult htmlCodeResult,Long appId) {
+        String baseDirPath = buildUniqueDir(CodeGenTypeEnum.HTML.getValue(),appId);
         writeToFile("index.html", baseDirPath, htmlCodeResult.getHtmlCode());
         return new File(baseDirPath);
     }
@@ -28,8 +28,8 @@ public class CodeFileSaver {
     /**
      * 保存MultiFileCodeResult代码
      */
-    public static File saveMultiFileCodeResult(MultiFileCodeResult multiFileCodeResult) {
-        String baseDirPath = buildUniqueDir(CodeGenTypeEnum.MULTI_FILE.getValue());
+    public static File saveMultiFileCodeResult(MultiFileCodeResult multiFileCodeResult,Long appId) {
+        String baseDirPath = buildUniqueDir(CodeGenTypeEnum.MULTI_FILE.getValue(),appId);
         writeToFile("index.html", baseDirPath, multiFileCodeResult.getHtmlCode());
         writeToFile("index.css", baseDirPath, multiFileCodeResult.getCssCode());
         writeToFile("script.js", baseDirPath, multiFileCodeResult.getJsCode());
@@ -41,8 +41,8 @@ public class CodeFileSaver {
      * 生成唯一路径，参考雪花算法
      */
 
-    private static String buildUniqueDir(String bizType) {
-        String uniqueDirName = StrUtil.format("{}_{}", bizType, IdUtil.getSnowflakeNextIdStr());
+    private static String buildUniqueDir(String bizType,Long appId) {
+        String uniqueDirName = StrUtil.format("{}_{}", bizType, appId);
         String dirPath = FILE_SAVE_ROOT_DIR  + File.separator + uniqueDirName;
         FileUtil.mkdir(dirPath);
         return dirPath;

@@ -22,12 +22,12 @@ public class CodeFileSaverExecutor {
      * @return
      */
 
-    public static File executeSaver(Object codeResult, CodeGenTypeEnum codeGenType) {
+    public static File executeSaver(Object codeResult, CodeGenTypeEnum codeGenType,Long appId) {
         switch (codeGenType) {
             case HTML:
-                return CodeFileSaver.saveHtmlCodeResult((HtmlCodeResult) codeResult);
+                return htmlCodeFileSaver.saveCode((HtmlCodeResult) codeResult,appId);
             case MULTI_FILE:
-                return CodeFileSaver.saveMultiFileCodeResult((MultiFileCodeResult) codeResult);
+                return multiFileCodeFileSaver.saveCode((MultiFileCodeResult) codeResult,appId);
             default:
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成模式");
         }
