@@ -2,6 +2,7 @@ package com.limou.aicodemother.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 import com.limou.aicodemother.annotation.AuthCheck;
 import com.limou.aicodemother.common.BaseResponse;
@@ -26,11 +27,14 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 应用 控制层。
@@ -56,13 +60,25 @@ public class AppController {
      */
 //, produces = MediaType.TEXT_EVENT_STREAM_VALUE可有可无但是最好加上
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatToGenCode(Long appId, String message, HttpServletRequest request) {
+    public Flux<ServerSentEvent<String>> chatToGenCode(Long appId, String message, HttpServletRequest request) {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
         if (message == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请输入要生成的代码");
         }
         User loginUser = userService.getLoginUser(request);
-        return appService.chatToGenCode(appId, message, loginUser);
+        return appService.chatToGenCode(appId, message, loginUser).map(chunk -> {
+            //包装成JSON对象，必须是map类型，不然不行
+            String jsonStr = JSONUtil.toJsonStr(Map.of("d", chunk));
+//            String jsonStr = JSONUtil.toJsonStr( chunk);，这种不会生成{key,"value"}这种形式
+            return ServerSentEvent.<String>builder()
+                    .data(jsonStr)
+                    .build();
+        }).concatWith(Mono.just(
+                ServerSentEvent.<String>builder()
+                        .event("done")
+                        .data("")
+                        .build()
+        ));
     }
 
 
