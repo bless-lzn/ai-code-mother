@@ -1,10 +1,12 @@
 package com.limou.aicodemother.service;
 
 import com.limou.aicodemother.model.dto.app.AppQueryRequest;
+import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.vo.AppVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.limou.aicodemother.model.entity.App;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -14,6 +16,16 @@ import java.util.List;
  * @author 李振南
  */
 public interface AppService extends IService<App> {
+
+    /**
+     * AI生成代码
+     *
+     * @param appId      应用 id
+     * @param message    消息
+     * @param loginUser  登录用户
+     * @return 生成的代码
+     */
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
 
     /**
      * 将 App 转换成 AppVO

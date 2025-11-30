@@ -25,7 +25,9 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +45,26 @@ public class AppController {
     private AppService appService;
     @Resource
     private UserService userService;
+
+    /**
+     * 聊天生成代码
+     *
+     * @param appId   应用 id
+     * @param message 用户输入的 prompt
+     * @param request 请求
+     * @return 生成的代码
+     */
+//, produces = MediaType.TEXT_EVENT_STREAM_VALUE可有可无但是最好加上
+    @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chatToGenCode(Long appId, String message, HttpServletRequest request) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
+        if (message == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请输入要生成的代码");
+        }
+        User loginUser = userService.getLoginUser(request);
+        return appService.chatToGenCode(appId, message, loginUser);
+    }
+
 
     /**
      * 创建应用
@@ -132,7 +154,7 @@ public class AppController {
     /**
      * 根据 id 获取应用详情
      *
-     * @param id      应用 id
+     * @param id 应用 id
      * @return 应用详情
      */
     @GetMapping("/get/vo")
@@ -280,12 +302,6 @@ public class AppController {
         // 获取封装类
         return ResultUtils.success(appService.getAppVO(app));
     }
-
-
-
-
-
-
 
 
 }

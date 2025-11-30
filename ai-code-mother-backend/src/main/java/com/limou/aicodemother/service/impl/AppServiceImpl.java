@@ -2,8 +2,11 @@ package com.limou.aicodemother.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import com.limou.aicodemother.ai.core.AiCodeGeneratorFacade;
+import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
+import com.limou.aicodemother.exception.ThrowUtils;
 import com.limou.aicodemother.model.dto.app.AppQueryRequest;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.vo.AppVO;
@@ -16,6 +19,7 @@ import com.limou.aicodemother.mapper.AppMapper;
 import com.limou.aicodemother.service.AppService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +37,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private UserService userService;
+    @Resource
+    private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    /**
+     * 聊天生成代码
+     *
+     * @param appId     应用ID
+     * @param message   消息-提示词
+     * @param loginUser 登录用户
+     * @return
+     */
+
+    public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
+        //1.参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0 || message == null, ErrorCode.PARAMS_ERROR);
+        //2.查询应用信息
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        //3.权限校验，只有自己才能和自己对话
+        ThrowUtils.throwIf(!loginUser.getId().equals(app.getUserId()), ErrorCode.NO_AUTH_ERROR, "无权限操作");
+        //4.获取应用的代码生成类型
+        CodeGenTypeEnum enumByValue = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
+        //5.调用AI生成代码
+        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, enumByValue, appId);
+    }
 
     /**
      * 将 App 转换成 AppVO
@@ -114,7 +143,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             return appVO;
         }).collect(Collectors.toList());
     }
-
 
 
 }
