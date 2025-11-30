@@ -46,4 +46,13 @@ public interface AppService extends IService<App> {
      * @return AppVO 列表
      */
     List<AppVO> getAppVOList(List<App> appList);
+
+    /**
+     * 部署应用
+     *
+     * @param appId     应用 id
+     * @param loginUser 登录用户
+     * @return 部署结果
+     */
+    String deployApp(Long appId, User loginUser);
 }

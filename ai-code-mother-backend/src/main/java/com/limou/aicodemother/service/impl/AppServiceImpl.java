@@ -2,25 +2,31 @@ package com.limou.aicodemother.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.limou.aicodemother.ai.core.AiCodeGeneratorFacade;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
+import com.limou.aicodemother.constant.AppConstant;
 import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
+import com.limou.aicodemother.mapper.AppMapper;
 import com.limou.aicodemother.model.dto.app.AppQueryRequest;
+import com.limou.aicodemother.model.entity.App;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.vo.AppVO;
 import com.limou.aicodemother.model.vo.UserVO;
+import com.limou.aicodemother.service.AppService;
 import com.limou.aicodemother.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.limou.aicodemother.model.entity.App;
-import com.limou.aicodemother.mapper.AppMapper;
-import com.limou.aicodemother.service.AppService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.io.File;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +52,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
      * @param appId     应用ID
      * @param message   消息-提示词
      * @param loginUser 登录用户
-     * @return
+     * @return 生成的代码
      */
 
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
@@ -144,5 +150,49 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }).collect(Collectors.toList());
     }
 
+    /**
+     * @param appId     应用id
+     * @param loginUser 登录用户
+     * @return 可访问路径
+     */
+    @Override
+    public String deployApp(Long appId, User loginUser) {
+        //1.权限校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
+        //2.查询应用信息
+        App app = this.getById(appId);
+        if (app == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        }
+        //3.验证用户是否有权限
+        ThrowUtils.throwIf(!loginUser.getId().equals(app.getUserId()), ErrorCode.NO_AUTH_ERROR, "无操作权限");
+        //4.检查是否已经有deployKey,没有就生成
+        String deployKey = app.getDeployKey();
+        if (StrUtil.isBlank(deployKey)) {
+            //生成6位随机数
+            deployKey = RandomUtil.randomString(6);
+        }
+        String codeGenType = app.getCodeGenType();
+        //5.获取代码的生成路径
+        String genePath = String.format("%s/%s_%s", AppConstant.CODE_OUTPUT_ROOT_DIR, codeGenType, appId);
+        File sourceFile = new File(genePath);
+        //6.检查原目录是否存在
+        if (!FileUtil.exist(genePath) || !sourceFile.isDirectory()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "代码生成目录不存在");
+        }
+        //7.复制文件到部署目录
+        String deployPath = String.format("%s/%s", AppConstant.CODE_DEPLOY_ROOT_DIR, deployKey);
+        FileUtil.copyContent(FileUtil.file(genePath), new File(deployPath), true);
+        //8.更新应用的deployKey和部署时间
+        App updateApp = new App();
+        updateApp.setId(appId);
+        updateApp.setDeployKey(deployKey);
+        updateApp.setDeployedTime(LocalDateTime.now());
+//        this.updateById(updateApp);
+        this.updateById(updateApp);
+        //9.返回部署可以访问的路径
+        return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+
+    }
 
 }

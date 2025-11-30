@@ -81,6 +81,25 @@ public class AppController {
         ));
     }
 
+    /**
+     * 部署应用
+     *
+     * @param appId   应用 id
+     * @param request 请求
+     * @return 部署结果
+     */
+    @GetMapping("/deploy")
+    public BaseResponse<String> deployApp(Long appId, HttpServletRequest request) {
+        //校验参数
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
+        //判断appId是不是没有
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        User loginUser = userService.getLoginUser(request);
+        String deployAppPath = appService.deployApp(appId, loginUser);
+        return ResultUtils.success(deployAppPath);
+    }
+
 
     /**
      * 创建应用
