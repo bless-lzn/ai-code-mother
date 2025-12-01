@@ -15,17 +15,21 @@ import com.limou.aicodemother.mapper.AppMapper;
 import com.limou.aicodemother.model.dto.app.AppQueryRequest;
 import com.limou.aicodemother.model.entity.App;
 import com.limou.aicodemother.model.entity.User;
+import com.limou.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.limou.aicodemother.model.vo.AppVO;
 import com.limou.aicodemother.model.vo.UserVO;
 import com.limou.aicodemother.service.AppService;
+import com.limou.aicodemother.service.ChatHistoryService;
 import com.limou.aicodemother.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +50,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
+    @Resource
+    private ChatHistoryService chatHistoryService;
+
     /**
      * 聊天生成代码
      *
@@ -65,8 +72,24 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         ThrowUtils.throwIf(!loginUser.getId().equals(app.getUserId()), ErrorCode.NO_AUTH_ERROR, "无权限操作");
         //4.获取应用的代码生成类型
         CodeGenTypeEnum enumByValue = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
-        //5.调用AI生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, enumByValue, appId);
+        //4.1添加用户信息到chat_message中
+        chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        //5.调用AI生成代码,并且将ai生成的信息保存到chat_history中
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, enumByValue, appId).doOnNext(aiResponseBuilder::append).doOnComplete(
+                () -> {
+                    String aiResponse = aiResponseBuilder.toString();
+                    if (StrUtil.isBlank(aiResponse)) {
+                        return;
+                    }
+                    //7.添加AI生成的信息到chat_message中
+                    chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                }
+        ).doOnError(error -> {
+            //如果AI回复消息失败也要记录一下
+            String errorMessage = "AI回复失败：" + error.getMessage();
+            chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+        });
     }
 
     /**
@@ -195,4 +218,21 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     }
 
+    /**
+     * 删除（逻辑删除）
+     *
+     * @param id 主键
+     * @return 是否成功
+     */
+    @Override
+    @Transactional
+    public boolean removeById(Serializable id) {
+//        关联删除
+        if (id == null)
+            return false;
+        //先删除成功对话消息
+        long appId = Long.parseLong(id.toString());
+        chatHistoryService.deleteByAppId(appId);
+        return super.removeById(id);
+    }
 }
