@@ -1,26 +1,32 @@
 package com.limou.aicodemother.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.limou.aicodemother.constant.UserConstant;
 import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
+import com.limou.aicodemother.mapper.ChatHistoryMapper;
 import com.limou.aicodemother.model.dto.chatHistory.ChatHistoryQueryRequest;
 import com.limou.aicodemother.model.entity.App;
+import com.limou.aicodemother.model.entity.ChatHistory;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.limou.aicodemother.service.AppService;
+import com.limou.aicodemother.service.ChatHistoryService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.limou.aicodemother.model.entity.ChatHistory;
-import com.limou.aicodemother.mapper.ChatHistoryMapper;
-import com.limou.aicodemother.service.ChatHistoryService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 对话历史 服务层实现。
@@ -28,10 +34,11 @@ import java.time.LocalDateTime;
  * @author 李振南
  */
 @Service
+@Slf4j
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory> implements ChatHistoryService {
-@Resource
-@Lazy
-private AppService appService;
+    @Resource
+    @Lazy
+    private AppService appService;
 
     /**
      * 添加对话消息
@@ -87,8 +94,6 @@ private AppService appService;
         Long appId = chatHistoryQueryRequest.getAppId();
         Long userId = chatHistoryQueryRequest.getUserId();
         LocalDateTime lastCreateTime = chatHistoryQueryRequest.getLastCreateTime();
-        int pageNum = chatHistoryQueryRequest.getPageNum();
-        int pageSize = chatHistoryQueryRequest.getPageSize();
         String sortField = chatHistoryQueryRequest.getSortField();
         String sortOrder = chatHistoryQueryRequest.getSortOrder();
         QueryWrapper queryWrapper = QueryWrapper.create()
@@ -108,6 +113,7 @@ private AppService appService;
     }
 
     @Override
+
     public Page<ChatHistory> listAppChatHistoryByPage(Long appId, int pageSize,
                                                       LocalDateTime lastCreateTime,
                                                       User loginUser) {
@@ -129,6 +135,35 @@ private AppService appService;
         return this.page(Page.of(1, pageSize), queryWrapper);
     }
 
+    @Override
+    public int loadChatHistory(Long appId, MessageWindowChatMemory chatMemory, int maxCount) {
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .eq("appId", appId)
+                .orderBy(ChatHistory::getCreateTime, false)
+                .limit(1, maxCount);//防止重复加载你的UserMessage数据
+        List<ChatHistory> historyList = list(queryWrapper);
+        if (CollUtil.isEmpty(historyList)) {
+            return 0;
+        }
+        historyList = historyList.reversed();
+        int loadedCount = 0;
+        //先清理缓存防止重复加载
+        chatMemory.clear();
+        //依次添加到Memory中
+        for (ChatHistory history : historyList) {
+            if (history.getMessageType().equals(ChatHistoryMessageTypeEnum.USER.getValue())) {
+                chatMemory.add(UserMessage.from(history.getMessage()));
+                loadedCount++;
+            } else if (history.getMessageType().equals(ChatHistoryMessageTypeEnum.AI.getValue())) {
+                chatMemory.add(AiMessage.from(history.getMessage()));
+                loadedCount++;
+            }
+
+        }
+        log.info("加载历史记录：appId:{},数量：{}", appId, loadedCount);
+        return loadedCount;
+
+    }
 
 
 }

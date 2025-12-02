@@ -82,6 +82,10 @@
             <version>4.4.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
 
         <!-- Redis -->
         <dependency>
@@ -95,6 +99,12 @@
             <artifactId>spring-session-data-redis</artifactId>
         </dependency>
 
+<!--https://docs.langchain4j.dev/integrations/embedding-stores/redis-->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-community-redis-spring-boot-starter</artifactId>
+            <version>1.1.0-beta7</version>
+        </dependency>
         <!--https://mybatis-flex.com/zh/others/codegen.html-->
         <!-- 代码生成模块 -->
         <dependency>

@@ -7,19 +7,17 @@ import com.limou.aicodemother.constant.UserConstant;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
 import com.limou.aicodemother.model.dto.chatHistory.ChatHistoryQueryRequest;
+import com.limou.aicodemother.model.entity.ChatHistory;
 import com.limou.aicodemother.model.entity.User;
+import com.limou.aicodemother.service.ChatHistoryService;
 import com.limou.aicodemother.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.limou.aicodemother.model.entity.ChatHistory;
-import com.limou.aicodemother.service.ChatHistoryService;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 对话历史 控制层。
@@ -71,6 +69,9 @@ public class ChatHistoryController {
         Page<ChatHistory> result = chatHistoryService.page(Page.of(pageNum, pageSize), queryWrapper);
         return ResultUtils.success(result);
     }
+
+
+
 
 
 }

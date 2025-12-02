@@ -8,12 +8,13 @@ spring:
 #    password: LZNlzn123.
 #
 #      # Redis 配置
-#  data:
-#    redis:
-#      database: 1
-#      host: 127.0.0.1
-#      port: 6379
-#      timeout: 5000
+  data:
+    redis:
+      database: ${spring.data.redis.database}
+      host: ${spring.data.redis.host}
+      port: ${spring.data.redis.port}
+      timeout: ${spring.data.redis.timeout}
+      ttl: ${spring.data.redis.ttl}
 
   servlet:
     multipart:

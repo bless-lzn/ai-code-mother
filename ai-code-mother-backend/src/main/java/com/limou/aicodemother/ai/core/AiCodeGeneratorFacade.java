@@ -1,6 +1,7 @@
 package com.limou.aicodemother.ai.core;
 
 import com.limou.aicodemother.ai.AiCodeGeneratorService;
+import com.limou.aicodemother.ai.AiCodeGeneratorServiceFactory;
 import com.limou.aicodemother.ai.core.parser.CodeParserExecutor;
 import com.limou.aicodemother.ai.core.saver.CodeFileSaverExecutor;
 import com.limou.aicodemother.ai.model.HtmlCodeResult;
@@ -8,6 +9,7 @@ import com.limou.aicodemother.ai.model.MultiFileCodeResult;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,10 +24,9 @@ import java.io.File;
 @Slf4j
 public class AiCodeGeneratorFacade {
     @Resource
-    private AiCodeGeneratorService aiCodeGeneratorService;
+    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     //传入用户信息和生成类型
-
 
     public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum,Long appId) {
         //判断codeGenTypeEnum是否为空
@@ -33,6 +34,7 @@ public class AiCodeGeneratorFacade {
             throw new RuntimeException("生成类型不能为空");
         }
         ThrowUtils.throwIf(appId==null, ErrorCode.PARAMS_ERROR, "appId不能为空");
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         //switch
         return switch (codeGenTypeEnum) {
             case HTML -> {
@@ -58,6 +60,7 @@ public class AiCodeGeneratorFacade {
         }
         ThrowUtils.throwIf(appId==null, ErrorCode.PARAMS_ERROR, "appId不能为空");
         //switch
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
@@ -102,6 +105,7 @@ public class AiCodeGeneratorFacade {
      */
     private Flux<String> generateAndSaveMultiFileCodeStream(String userMessage,Long appId) {
         //1.调用AI
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
         return processCodeStream(result, CodeGenTypeEnum.MULTI_FILE,appId);
     }
@@ -110,6 +114,7 @@ public class AiCodeGeneratorFacade {
      * 生成HTML代码并保存
      */
     private Flux<String> generateAndSaveHtmlCodeStream(String userMessage,Long appId) {
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
         return this.processCodeStream(result, CodeGenTypeEnum.HTML,appId);
     }
@@ -119,6 +124,7 @@ public class AiCodeGeneratorFacade {
      * 生成HTML代码并保存
      */
     private File generateAndSaveHtmlCode(String userMessage,Long appId) {
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
         return CodeFileSaverExecutor.executeSaver(htmlCodeResult, CodeGenTypeEnum.HTML,appId);
     }
@@ -128,6 +134,7 @@ public class AiCodeGeneratorFacade {
      */
 
     private File generateAndSaveMultiFileCode(String userMessage,Long appId) {
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         MultiFileCodeResult multiFileCodeResult = aiCodeGeneratorService.generateMultiFileCode(userMessage);
         return CodeFileSaverExecutor.executeSaver(multiFileCodeResult, CodeGenTypeEnum.MULTI_FILE,appId);
     }
