@@ -60,7 +60,7 @@ public class AiCodeGeneratorFacade {
         }
         ThrowUtils.throwIf(appId==null, ErrorCode.PARAMS_ERROR, "appId不能为空");
         //switch
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
@@ -68,6 +68,10 @@ public class AiCodeGeneratorFacade {
             }
             case MULTI_FILE -> {
                 Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
+                yield this.processCodeStream(result, CodeGenTypeEnum.MULTI_FILE,appId);
+            }
+            case VUE_PROJECT -> {
+                Flux<String> result = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
                 yield this.processCodeStream(result, CodeGenTypeEnum.MULTI_FILE,appId);
             }
             default -> throw new RuntimeException("不支持的生成类型");

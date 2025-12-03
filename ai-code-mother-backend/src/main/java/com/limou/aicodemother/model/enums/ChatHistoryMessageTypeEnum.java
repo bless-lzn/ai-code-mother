@@ -9,6 +9,7 @@ public enum ChatHistoryMessageTypeEnum {
     USER("用户", "user"),
     AI("AI", "ai");
 
+
     private final String text;
 
     private final String value;
