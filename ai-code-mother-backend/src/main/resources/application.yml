@@ -61,3 +61,10 @@ langchain4j:
       max-tokens: 8192
       log-requests: true
       log-responses: true
+    reason-stream-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.open-ai.chat-model.api-key}
+      model-name: deepseek-chat
+      max-tokens: 8192
+      log-requests: true
+      log-responses: true
