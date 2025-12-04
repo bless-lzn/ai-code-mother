@@ -6,6 +6,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.limou.aicodemother.ai.core.AiCodeGeneratorFacade;
+import com.limou.aicodemother.ai.core.builder.VueProjectBuilder;
+import com.limou.aicodemother.ai.core.handle.JsonMessageStreamHandler;
+import com.limou.aicodemother.ai.core.handle.StreamHandlerExecutor;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 import com.limou.aicodemother.constant.AppConstant;
 import com.limou.aicodemother.exception.BusinessException;
@@ -24,6 +27,7 @@ import com.limou.aicodemother.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -43,6 +47,7 @@ import java.util.stream.Collectors;
  * @author 李振南
  */
 @Service
+@Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
     @Resource
@@ -52,6 +57,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+
+    @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
+
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 聊天生成代码
@@ -72,24 +85,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         ThrowUtils.throwIf(!loginUser.getId().equals(app.getUserId()), ErrorCode.NO_AUTH_ERROR, "无权限操作");
         //4.获取应用的代码生成类型
         CodeGenTypeEnum enumByValue = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
+        ThrowUtils.throwIf(enumByValue == null, ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
         //4.1添加用户信息到chat_message中
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
         //5.调用AI生成代码,并且将ai生成的信息保存到chat_history中
         StringBuilder aiResponseBuilder = new StringBuilder();
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, enumByValue, appId).doOnNext(aiResponseBuilder::append).doOnComplete(
-                () -> {
-                    String aiResponse = aiResponseBuilder.toString();
-                    if (StrUtil.isBlank(aiResponse)) {
-                        return;
-                    }
-                    //7.添加AI生成的信息到chat_message中
-                    chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-                }
-        ).doOnError(error -> {
-            //如果AI回复消息失败也要记录一下
-            String errorMessage = "AI回复失败：" + error.getMessage();
-            chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-        });
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, enumByValue, appId);
+        return streamHandlerExecutor.doExecute(contentFlux, chatHistoryService, appId, loginUser, enumByValue);
+
+        //                () -> {
+//                    String aiResponse = aiResponseBuilder.toString();
+//                    if (StrUtil.isBlank(aiResponse)) {
+//                        return;
+//                    }
+//                    //7.添加AI生成的信息到chat_message中
+//                    chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+//                }
+//        ).doOnError(error -> {
+//            //如果AI回复消息失败也要记录一下
+//            String errorMessage = "AI回复失败：" + error.getMessage();
+//            chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+//        });
     }
 
     /**
@@ -203,6 +219,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (!FileUtil.exist(genePath) || !sourceFile.isDirectory()) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "代码生成目录不存在");
         }
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            //vue的项目需要构建
+            boolean buildSuccess = vueProjectBuilder.buildProject(genePath);
+            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "构建失败");
+            //检查dist目录是否存在
+            File distDir = new File(genePath, "dist");
+            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.OPERATION_ERROR, "部署路径不存在");
+            genePath = distDir.getPath();
+            log.info("构建成功");
+        }
+
+
         //7.复制文件到部署目录
         String deployPath = String.format("%s/%s", AppConstant.CODE_DEPLOY_ROOT_DIR, deployKey);
         FileUtil.copyContent(FileUtil.file(genePath), new File(deployPath), true);

@@ -1,5 +1,6 @@
 package com.limou.aicodemother.ai.core;
 
+import cn.hutool.json.JSONUtil;
 import com.limou.aicodemother.ai.AiCodeGeneratorService;
 import com.limou.aicodemother.ai.AiCodeGeneratorServiceFactory;
 import com.limou.aicodemother.ai.core.parser.CodeParserExecutor;
@@ -7,8 +8,14 @@ import com.limou.aicodemother.ai.core.saver.CodeFileSaverExecutor;
 import com.limou.aicodemother.ai.model.HtmlCodeResult;
 import com.limou.aicodemother.ai.model.MultiFileCodeResult;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
+import com.limou.aicodemother.ai.model.message.AiResponseMessage;
+import com.limou.aicodemother.ai.model.message.ToolExecutedMessage;
+import com.limou.aicodemother.ai.model.message.ToolRequestMessage;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.service.TokenStream;
+import dev.langchain4j.service.tool.ToolExecution;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -71,12 +78,47 @@ public class AiCodeGeneratorFacade {
                 yield this.processCodeStream(result, CodeGenTypeEnum.MULTI_FILE,appId);
             }
             case VUE_PROJECT -> {
-                Flux<String> result = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
-                yield this.processCodeStream(result, CodeGenTypeEnum.MULTI_FILE,appId);
+                TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
+                yield this.processTokenStream(tokenStream);
             }
             default -> throw new RuntimeException("不支持的生成类型");
         };
     }
+
+
+
+
+    /**
+     * 将 TokenStream 转换为 Flux<String>，并传递工具调用信息
+     *
+     * @param tokenStream TokenStream 对象
+     * @return Flux<String> 流式响应
+     */
+    private Flux<String> processTokenStream(TokenStream tokenStream) {
+        return Flux.create(sink -> {
+            tokenStream.onPartialResponse((String partialResponse) -> {
+                        AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
+                        sink.next(JSONUtil.toJsonStr(aiResponseMessage));
+                    })
+                    .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
+                        ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
+                        sink.next(JSONUtil.toJsonStr(toolRequestMessage));
+                    })
+                    .onToolExecuted((ToolExecution toolExecution) -> {
+                        ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
+                        sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
+                    })
+                    .onCompleteResponse((ChatResponse response) -> {
+                        sink.complete();
+                    })
+                    .onError((Throwable error) -> {
+                        error.printStackTrace();
+                        sink.error(error);
+                    })
+                    .start();
+        });
+    }
+
 
 
     /**
