@@ -23,6 +23,7 @@ import com.limou.aicodemother.model.vo.AppVO;
 import com.limou.aicodemother.model.vo.UserVO;
 import com.limou.aicodemother.service.AppService;
 import com.limou.aicodemother.service.ChatHistoryService;
+import com.limou.aicodemother.service.ScreenshotService;
 import com.limou.aicodemother.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -65,6 +66,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ScreenshotService screenshotService;
 
     /**
      * 聊天生成代码
@@ -221,7 +225,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
         if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
-            //vue的项目需要构建
+            //vue的项目需要构建。。。。再次进行构造更加保险一点。
             boolean buildSuccess = vueProjectBuilder.buildProject(genePath);
             ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "构建失败");
             //检查dist目录是否存在
@@ -231,19 +235,36 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             log.info("构建成功");
         }
 
-
         //7.复制文件到部署目录
-        String deployPath = String.format("%s/%s", AppConstant.CODE_DEPLOY_ROOT_DIR, deployKey);
+        String deployPath = String.format("%s/%s/", AppConstant.CODE_DEPLOY_ROOT_DIR, deployKey);
         FileUtil.copyContent(FileUtil.file(genePath), new File(deployPath), true);
+
         //8.更新应用的deployKey和部署时间
         App updateApp = new App();
         updateApp.setId(appId);
         updateApp.setDeployKey(deployKey);
         updateApp.setDeployedTime(LocalDateTime.now());
-//        this.updateById(updateApp);
         this.updateById(updateApp);
         //9.返回部署可以访问的路径
-        return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String deployUrl= String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        //10.异步处理生成和保存截图
+        geneAndSaveScreenshot(appId, deployUrl);
+        return deployUrl;
+
+    }
+    public void geneAndSaveScreenshot(Long appId,String webUrl) {
+        App app = this.getById(appId);
+        if (app == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        }
+        Thread.startVirtualThread(()->{
+            String coverUrl = screenshotService.generateAndUploadScreenshot(webUrl);
+            App build = App.builder().cover(coverUrl).id(appId).build();
+            boolean updateSuccess = this.updateById(build);
+            if (!updateSuccess) {
+                log.error("更新应用封面失败");
+            }
+        });
 
     }
 
