@@ -59,7 +59,7 @@ public class WebScreenshotUtils {
             compressImage(imagePath, compressedImagePath);
             log.info("图片压缩成功：{}", compressedImagePath);
             //删除原始文件，保留压缩文件
-//            FileUtil.del(imagePath);
+            FileUtil.del(imagePath);
             return compressedImagePath;
         } catch (Exception e) {
             log.error("保存图片失败", e);
@@ -143,6 +143,10 @@ public class WebScreenshotUtils {
         } catch (Exception e) {
             log.error("等待页面加载时出现异常，继续执行截图", e);
         }
+    }
+
+    private static void cleanTempFiles(){
+        FileUtil.clean(System.getProperty("user.dir") + File.separator + "tmp"+ File.separator + "screenshots");
     }
 
 
