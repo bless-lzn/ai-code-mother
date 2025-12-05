@@ -5,7 +5,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jfinal.template.stat.ast.Break;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
-import com.limou.aicodemother.ai.tools.FileWriteTool;
+import com.limou.aicodemother.ai.tools.*;
 import com.limou.aicodemother.config.ReasoningStreamingChatModelConfig;
 import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
@@ -91,15 +91,15 @@ public class AiCodeGeneratorServiceFactory {
     /**
      * 根据 appId 获取服务（带缓存）
      */
-    public AiCodeGeneratorService getAiCodeGeneratorService(long appId,CodeGenTypeEnum codeGenType) {
+    public AiCodeGeneratorService getAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
         String cacheKey = appId + ":" + codeGenType.getValue();
-        return serviceCache.get(cacheKey, key->createAiCodeGeneratorService(appId, codeGenType));
+        return serviceCache.get(cacheKey, key -> createAiCodeGeneratorService(appId, codeGenType));
     }
 
     /**
      * 根据 appId 获取服务（不带缓存）为了兼容以前的老逻辑
      */
-    public  AiCodeGeneratorService getAiCodeGeneratorService(long appId) {
+    public AiCodeGeneratorService getAiCodeGeneratorService(long appId) {
         return getAiCodeGeneratorService(appId, CodeGenTypeEnum.HTML);
     }
 
@@ -123,18 +123,25 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
-                    .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .chatMemoryProvider(memoryId -> chatMemory)//框架原因---》只要有@MemoryId 就要用这个
+                    .tools(
+                            new FileWriteTool(),
+                            new FileDeleteTool(),
+                            new FileModifyTool(),
+                            new FileReadTool(),
+                            new FileDirReadTool()
+                    )
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest,
                             "error:there is no tool called" + toolExecutionRequest.name()
-                    ))
+                    ))//当AI出现幻觉，调用一个不存在的工具的时候怎么处理。
                     .build();
             case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
                     .chatModel(chatModel)
                     .streamingChatModel(openAiStreamingChatModel)
                     .chatMemory(chatMemory).build();
-            default -> throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的生成模式"+codeGenTypeEnum.getValue());
+            default ->
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的生成模式" + codeGenTypeEnum.getValue());
 
         };
 

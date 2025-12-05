@@ -62,7 +62,7 @@ public interface AiCodeGeneratorService {
     /**
      * 生成 Vue 项目代码（流式）
      *
-     * @param userMessage 用户消息
+     * @param userMessage 用户消息----这个appId在调用的时候就要告诉AI这个在AIServices里面会有appId
      * @return 生成过程的流式响应
      */
     @SystemMessage(fromResource = "prompt/codegen-vue-project-system-prompt.txt")
