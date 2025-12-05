@@ -6,6 +6,8 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.limou.aicodemother.ai.core.builder.VueProjectBuilder;
 import com.limou.aicodemother.ai.model.message.*;
+import com.limou.aicodemother.ai.tools.BaseTool;
+import com.limou.aicodemother.ai.tools.ToolManager;
 import com.limou.aicodemother.constant.AppConstant;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
@@ -27,6 +29,9 @@ import java.util.Set;
 public class JsonMessageStreamHandler {
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -74,6 +79,7 @@ public class JsonMessageStreamHandler {
         // 解析 JSON
         StreamMessage streamMessage = JSONUtil.toBean(chunk, StreamMessage.class);
         StreamMessageTypeEnum typeEnum = StreamMessageTypeEnum.getEnumByValue(streamMessage.getType());
+
         switch (typeEnum) {
             case AI_RESPONSE -> {
                 AiResponseMessage aiMessage = JSONUtil.toBean(chunk, AiResponseMessage.class);
@@ -89,24 +95,20 @@ public class JsonMessageStreamHandler {
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n[选择工具] 写入文件\n\n";
+                    BaseTool tool = toolManager.getTool(toolRequestMessage.getName());
+                    return tool.generateToolRequestResponse();
                 } else {
                     // 不是第一次调用这个工具，直接返回空
                     return "";
                 }
+
             }
             case TOOL_EXECUTED -> {
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
-                String relativeFilePath = jsonObject.getStr("relativeFilePath");
-                String suffix = FileUtil.getSuffix(relativeFilePath);
-                String content = jsonObject.getStr("content");
-                String result = String.format("""
-                        [工具调用] 写入文件 %s
-                        ```%s
-                        %s
-                        ```
-                        """, relativeFilePath, suffix, content);
+                String toolName = toolExecutedMessage.getName();
+                BaseTool tool = toolManager.getTool(toolName);
+                String result = tool.generateToolExecutedResult(jsonObject);
                 // 输出前端和要持久化的内容
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);

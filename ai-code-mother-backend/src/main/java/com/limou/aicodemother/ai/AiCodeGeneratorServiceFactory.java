@@ -48,6 +48,11 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
 
+    @Resource
+    private ToolManager toolManager;
+    @Resource
+    private BaseTool[] tools;
+
 
     //    @Bean
 //    public AiCodeGeneratorService aiCodeGeneratorService() {
@@ -125,11 +130,7 @@ public class AiCodeGeneratorServiceFactory {
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)//框架原因---》只要有@MemoryId 就要用这个
                     .tools(
-                            new FileWriteTool(),
-                            new FileDeleteTool(),
-                            new FileModifyTool(),
-                            new FileReadTool(),
-                            new FileDirReadTool()
+                            (Object[]) toolManager.getAllTools()
                     )
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest,
