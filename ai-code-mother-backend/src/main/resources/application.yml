@@ -58,8 +58,8 @@ langchain4j:
       model-name: deepseek-chat
       log-requests: true
       log-responses: true
-      strict-json-schema: true
-      response-format: json_object
+#      strict-json-schema: true
+#      response-format: json_object
     streaming-chat-model:
       base-url: https://api.deepseek.com
       api-key: ${langchain4j.open-ai.chat-model.api-key}

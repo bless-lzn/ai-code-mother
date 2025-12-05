@@ -7,7 +7,6 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.limou.aicodemother.ai.core.AiCodeGeneratorFacade;
 import com.limou.aicodemother.ai.core.builder.VueProjectBuilder;
-import com.limou.aicodemother.ai.core.handle.JsonMessageStreamHandler;
 import com.limou.aicodemother.ai.core.handle.StreamHandlerExecutor;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 import com.limou.aicodemother.constant.AppConstant;
@@ -15,16 +14,14 @@ import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
 import com.limou.aicodemother.mapper.AppMapper;
+import com.limou.aicodemother.model.dto.app.AppAddRequest;
 import com.limou.aicodemother.model.dto.app.AppQueryRequest;
 import com.limou.aicodemother.model.entity.App;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.limou.aicodemother.model.vo.AppVO;
 import com.limou.aicodemother.model.vo.UserVO;
-import com.limou.aicodemother.service.AppService;
-import com.limou.aicodemother.service.ChatHistoryService;
-import com.limou.aicodemother.service.ScreenshotService;
-import com.limou.aicodemother.service.UserService;
+import com.limou.aicodemother.service.*;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -69,6 +66,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private ScreenshotService screenshotService;
+
+
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
     /**
      * 聊天生成代码
@@ -246,18 +247,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         updateApp.setDeployedTime(LocalDateTime.now());
         this.updateById(updateApp);
         //9.返回部署可以访问的路径
-        String deployUrl= String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String deployUrl = String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
         //10.异步处理生成和保存截图
         geneAndSaveScreenshot(appId, deployUrl);
         return deployUrl;
 
     }
-    public void geneAndSaveScreenshot(Long appId,String webUrl) {
+
+    public void geneAndSaveScreenshot(Long appId, String webUrl) {
         App app = this.getById(appId);
         if (app == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         }
-        Thread.startVirtualThread(()->{
+        Thread.startVirtualThread(() -> {
             String coverUrl = screenshotService.generateAndUploadScreenshot(webUrl);
             App build = App.builder().cover(coverUrl).id(appId).build();
             boolean updateSuccess = this.updateById(build);
@@ -285,4 +287,35 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         chatHistoryService.deleteByAppId(appId);
         return super.removeById(id);
     }
+
+
+    /**
+     * 创建应用
+     *
+     * @param appAddRequest
+     * @param loginUser
+     * @return
+     */
+
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
+        // 参数校验
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 应用名称暂时为 initPrompt 前 12 位
+        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routerCodeGenType(initPrompt);
+        app.setCodeGenType(selectedCodeGenType.getValue());
+        // 插入数据库
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        return app.getId();
+    }
+
 }

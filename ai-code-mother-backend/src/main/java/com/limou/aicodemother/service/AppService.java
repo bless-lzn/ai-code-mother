@@ -1,5 +1,6 @@
 package com.limou.aicodemother.service;
 
+import com.limou.aicodemother.model.dto.app.AppAddRequest;
 import com.limou.aicodemother.model.dto.app.AppQueryRequest;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.vo.AppVO;
@@ -55,4 +56,6 @@ public interface AppService extends IService<App> {
      * @return 部署结果
      */
     String deployApp(Long appId, User loginUser);
+
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 }
