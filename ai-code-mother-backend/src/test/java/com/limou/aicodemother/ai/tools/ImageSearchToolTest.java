@@ -2,6 +2,7 @@ package com.limou.aicodemother.ai.tools;
 
 import com.limou.aicodemother.langgraph4j.model.ImageResource;
 import com.limou.aicodemother.langgraph4j.model.enums.ImageCategoryEnum;
+import com.limou.aicodemother.langgraph4j.tools.ImageSearchTool;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
