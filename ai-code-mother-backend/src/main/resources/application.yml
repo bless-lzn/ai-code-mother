@@ -67,11 +67,21 @@ langchain4j:
       max-tokens: 8192
       log-requests: true
       log-responses: true
-    reason-stream-chat-model:
+    reasoning-streaming-chat-model:
       base-url: https://api.deepseek.com
       api-key: ${langchain4j.open-ai.chat-model.api-key}
       model-name: deepseek-chat
       max-tokens: 8192
+      temperature: 0.1
+      log-requests: true
+      log-responses: true
+    routing-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.open-ai.chat-model.api-key}
+      model-name: deepseek-chat
+      log-requests: true
+      log-responses: true
+
 
 # Pexels 图片搜索配置
 pexels:

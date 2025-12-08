@@ -5,6 +5,8 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.limou.aicodemother.ai.AiCodeGenTypeRoutingServiceFactory;
+import com.limou.aicodemother.ai.AiCodeGeneratorServiceFactory;
 import com.limou.aicodemother.ai.core.AiCodeGeneratorFacade;
 import com.limou.aicodemother.ai.core.builder.VueProjectBuilder;
 import com.limou.aicodemother.ai.core.handle.StreamHandlerExecutor;
@@ -68,8 +70,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private ScreenshotService screenshotService;
 
 
+//    @Resource
+//    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+
     @Resource
-    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
 
     /**
      * 聊天生成代码
@@ -309,7 +314,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 使用 AI 智能选择代码生成类型
+        AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.aiCodeGenTypeRoutingService();
         CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routerCodeGenType(initPrompt);
+
         app.setCodeGenType(selectedCodeGenType.getValue());
         // 插入数据库
         boolean result = this.save(app);

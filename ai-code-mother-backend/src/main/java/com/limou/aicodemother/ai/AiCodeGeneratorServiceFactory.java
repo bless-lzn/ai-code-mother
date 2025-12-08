@@ -10,6 +10,7 @@ import com.limou.aicodemother.config.ReasoningStreamingChatModelConfig;
 import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.service.ChatHistoryService;
+import com.limou.aicodemother.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -33,11 +34,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AiCodeGeneratorServiceFactory {
 
-    @Resource
+    @Resource(name = "openAiChatModel")
     private ChatModel chatModel;
 
-    @Resource
-    private StreamingChatModel openAiStreamingChatModel;
+//    @Resource
+//    private StreamingChatModel openAiStreamingChatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
@@ -45,8 +46,8 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private ChatHistoryService chatHistoryService;
 
-    @Resource
-    private StreamingChatModel reasoningStreamingChatModel;
+//    @Resource
+//    private StreamingChatModel reasoningStreamingChatModel;
 
     @Resource
     private ToolManager toolManager;
@@ -125,22 +126,29 @@ public class AiCodeGeneratorServiceFactory {
         //对不同的生成使用不同的模型
         return switch (codeGenTypeEnum) {
 
-            case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(reasoningStreamingChatModel)
-                    .chatMemoryProvider(memoryId -> chatMemory)//框架原因---》只要有@MemoryId 就要用这个
-                    .tools(
-                            (Object[]) toolManager.getAllTools()
-                    )
-                    .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
-                            toolExecutionRequest,
-                            "error:there is no tool called" + toolExecutionRequest.name()
-                    ))//当AI出现幻觉，调用一个不存在的工具的时候怎么处理。
-                    .build();
-            case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(openAiStreamingChatModel)
-                    .chatMemory(chatMemory).build();
+            case VUE_PROJECT -> {
+                //调用多例的模型
+                StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamChatModelPrototype", StreamingChatModel.class);
+                yield AiServices.builder(AiCodeGeneratorService.class)
+                        .chatModel(chatModel)
+                        .streamingChatModel(reasoningStreamingChatModel)
+                        .chatMemoryProvider(memoryId -> chatMemory)//框架原因---》只要有@MemoryId 就要用这个
+                        .tools(
+                                (Object[]) toolManager.getAllTools()
+                        )
+                        .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
+                                toolExecutionRequest,
+                                "error:there is no tool called" + toolExecutionRequest.name()
+                        ))//当AI出现幻觉，调用一个不存在的工具的时候怎么处理。
+                        .build();
+            }
+            case HTML, MULTI_FILE -> {
+                StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamChatModelPrototype", StreamingChatModel.class);
+                yield AiServices.builder(AiCodeGeneratorService.class)
+                        .chatModel(chatModel)
+                        .streamingChatModel(openAiStreamingChatModel)
+                        .chatMemory(chatMemory).build();
+            }
             default ->
                     throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的生成模式" + codeGenTypeEnum.getValue());
 

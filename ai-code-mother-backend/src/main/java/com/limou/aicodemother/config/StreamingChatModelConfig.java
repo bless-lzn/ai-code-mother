@@ -8,16 +8,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
-@ConfigurationProperties(prefix = "langchain4j.open-ai.reasoning-streaming-chat-model")
 @Configuration
+@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class StreamingChatModelConfig {
+
+    private String baseUrl;
 
     private String apiKey;
 
     private String modelName;
-
-    private String baseUrl;
 
     private Integer maxTokens;
 
@@ -28,18 +28,16 @@ public class ReasoningStreamingChatModelConfig {
     private boolean logResponses;
 
     @Bean
-    @Scope("prototype")//变成多例设计模式
-    public StreamingChatModel reasoningStreamingChatModelPrototype() {
+    @Scope("prototype")
+    public StreamingChatModel streamingChatModelPrototype() {
         return OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
-                .modelName(modelName)
                 .baseUrl(baseUrl)
-                .temperature(temperature)
+                .modelName(modelName)
                 .maxTokens(maxTokens)
+                .temperature(temperature)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
                 .build();
     }
-
-
 }
