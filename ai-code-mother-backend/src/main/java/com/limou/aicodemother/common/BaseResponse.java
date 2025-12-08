@@ -1,11 +1,14 @@
 package com.limou.aicodemother.common;
 
 import com.limou.aicodemother.exception.ErrorCode;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Data
+@NoArgsConstructor//加上无参构造将类的对象信息等都写上去
 public class BaseResponse<T> implements Serializable {
 
     private int code;
