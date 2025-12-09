@@ -101,7 +101,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         //5.调用AI生成代码,并且将ai生成的信息保存到chat_history中
         StringBuilder aiResponseBuilder = new StringBuilder();
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, enumByValue, appId);
+        //对话的时候进行异步构建
         return streamHandlerExecutor.doExecute(contentFlux, chatHistoryService, appId, loginUser, enumByValue);
+
 
         //                () -> {
 //                    String aiResponse = aiResponseBuilder.toString();

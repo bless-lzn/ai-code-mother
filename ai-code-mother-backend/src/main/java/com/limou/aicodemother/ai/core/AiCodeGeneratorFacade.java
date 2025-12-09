@@ -3,6 +3,7 @@ package com.limou.aicodemother.ai.core;
 import cn.hutool.json.JSONUtil;
 import com.limou.aicodemother.ai.AiCodeGeneratorService;
 import com.limou.aicodemother.ai.AiCodeGeneratorServiceFactory;
+import com.limou.aicodemother.ai.core.builder.VueProjectBuilder;
 import com.limou.aicodemother.ai.core.parser.CodeParserExecutor;
 import com.limou.aicodemother.ai.core.saver.CodeFileSaverExecutor;
 import com.limou.aicodemother.ai.model.HtmlCodeResult;
@@ -11,6 +12,7 @@ import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 import com.limou.aicodemother.ai.model.message.AiResponseMessage;
 import com.limou.aicodemother.ai.model.message.ToolExecutedMessage;
 import com.limou.aicodemother.ai.model.message.ToolRequestMessage;
+import com.limou.aicodemother.constant.AppConstant;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -32,6 +34,9 @@ import java.io.File;
 public class AiCodeGeneratorFacade {
     @Resource
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     //传入用户信息和生成类型
 
@@ -79,7 +84,7 @@ public class AiCodeGeneratorFacade {
             }
             case VUE_PROJECT -> {
                 TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
-                yield this.processTokenStream(tokenStream);
+                yield this.processTokenStream(tokenStream,appId);
             }
             default -> throw new RuntimeException("不支持的生成类型");
         };
@@ -94,7 +99,7 @@ public class AiCodeGeneratorFacade {
      * @param tokenStream TokenStream 对象
      * @return Flux<String> 流式响应
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream) {
+    private Flux<String> processTokenStream(TokenStream tokenStream,Long appId) {
         return Flux.create(sink -> {
             tokenStream.onPartialResponse((String partialResponse) -> {
                         AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
@@ -109,6 +114,9 @@ public class AiCodeGeneratorFacade {
                         sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
                     })
                     .onCompleteResponse((ChatResponse response) -> {
+                        String projectPath= AppConstant.CODE_OUTPUT_ROOT_DIR+"/vue_project_"+appId;
+                        //改为同步构造，不在添加历史消息的时候再次进行构建
+                        vueProjectBuilder.buildProject(projectPath);
                         sink.complete();
                     })
                     .onError((Throwable error) -> {
