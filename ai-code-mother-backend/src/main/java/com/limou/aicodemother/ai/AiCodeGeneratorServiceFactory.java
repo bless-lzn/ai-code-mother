@@ -142,6 +142,7 @@ public class AiCodeGeneratorServiceFactory {
                                 "error:there is no tool called" + toolExecutionRequest.name()
                         ))//当AI出现幻觉，调用一个不存在的工具的时候怎么处理。
                         .inputGuardrails(new PromptSafetyInputGuardrail())//提示词检查
+                        .maxSequentialToolsInvocations(10)//工具的最大调用次数
                         .build();
             }
             case HTML, MULTI_FILE -> {
