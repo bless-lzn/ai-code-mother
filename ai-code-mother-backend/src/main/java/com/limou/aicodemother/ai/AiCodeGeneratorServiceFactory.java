@@ -4,6 +4,7 @@ import cn.hutool.log.Log;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jfinal.template.stat.ast.Break;
+import com.limou.aicodemother.ai.guardrail.PromptSafetyInputGuardrail;
 import com.limou.aicodemother.ai.model.enums.CodeGenTypeEnum;
 import com.limou.aicodemother.ai.tools.*;
 import com.limou.aicodemother.config.ReasoningStreamingChatModelConfig;
@@ -140,6 +141,7 @@ public class AiCodeGeneratorServiceFactory {
                                 toolExecutionRequest,
                                 "error:there is no tool called" + toolExecutionRequest.name()
                         ))//当AI出现幻觉，调用一个不存在的工具的时候怎么处理。
+                        .inputGuardrails(new PromptSafetyInputGuardrail())//提示词检查
                         .build();
             }
             case HTML, MULTI_FILE -> {
@@ -147,6 +149,7 @@ public class AiCodeGeneratorServiceFactory {
                 yield AiServices.builder(AiCodeGeneratorService.class)
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())//提示词检查
                         .chatMemory(chatMemory).build();
             }
             default ->
