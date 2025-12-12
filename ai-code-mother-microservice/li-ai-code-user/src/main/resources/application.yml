@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: li-ai-code-user
+  datasource:
+    driver-class-name: ${spring.datasource.driver-class-name}
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+#      # Redis 配置
+  data:
+    redis:
+      database: ${spring.data.redis.database}
+      host: ${spring.data.redis.host}
+      port: ${spring.data.redis.port}
+      timeout: ${spring.data.redis.timeout}
+      ttl: ${spring.data.redis.ttl}
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  session:
+    timeout: 2592000
+  profiles:
+    active: dev
+server:
+  port: 8124
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        # session过期时间30天
+        max-age: 2592000
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.limou.aicodemother.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+
