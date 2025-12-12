@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration;
 //引入注解没有配置就不用加载
 @ConditionalOnProperty(
         prefix = "cos.client",
-        name={"hot","secretId","secretKey","region","bucket"}
+        name={"host","secretId","secretKey","region","bucket"}
 )
 @Data
 public class CosClientConfig {

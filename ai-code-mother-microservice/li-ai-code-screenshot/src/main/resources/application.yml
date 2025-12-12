@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: li-ai-code-screenshot
+  profiles:
+    active: dev
+server:
+  port: 8127
+  servlet:
+    context-path: /api
+cos:
+  client:
+    region: ${cos.client.region}
+    secretId: ${cos.client.secretId}
+    secretKey: ${cos.client.secretKey}
+    host: ${cos.client.host}
+    bucket: ${cos.client.bucket}
+
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.limou.aicodemother.controller
