@@ -5,8 +5,9 @@ import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.vo.UserVO;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
