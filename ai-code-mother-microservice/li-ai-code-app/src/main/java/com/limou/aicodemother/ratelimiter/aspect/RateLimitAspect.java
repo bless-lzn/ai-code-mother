@@ -6,7 +6,6 @@ import com.limou.aicodemother.innerservice.InnerUserService;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.ratelimiter.annotation.RateLimit;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.time.Duration;
 
