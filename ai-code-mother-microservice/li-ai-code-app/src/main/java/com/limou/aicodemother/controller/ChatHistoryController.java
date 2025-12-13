@@ -14,10 +14,11 @@ import com.limou.aicodemother.service.ChatHistoryService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
 /**
@@ -31,8 +32,7 @@ public class ChatHistoryController {
 
     @Resource
     private ChatHistoryService chatHistoryService;
-    @Resource
-    @Lazy
+    @DubboReference
     private InnerUserService userService;
 
     /**

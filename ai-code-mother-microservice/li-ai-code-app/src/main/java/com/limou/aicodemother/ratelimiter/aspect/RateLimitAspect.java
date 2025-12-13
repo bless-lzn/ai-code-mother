@@ -6,7 +6,9 @@ import com.limou.aicodemother.innerservice.InnerUserService;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.ratelimiter.annotation.RateLimit;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -20,7 +22,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.time.Duration;
 
@@ -32,24 +33,25 @@ public class RateLimitAspect {
     //使用令牌桶算法
     @Resource
     private RedissonClient redissonClient;
-    @Resource
-    @Lazy
+    @DubboReference
     private InnerUserService userService;
+
     @Before("@annotation(rateLimit)")
     public void rateLimit(JoinPoint joinPoint, RateLimit rateLimit) {
         //生成限流key
-        String key=generateRateLimitKey(joinPoint,rateLimit );
+        String key = generateRateLimitKey(joinPoint, rateLimit);
         //使用redisson的分布式限流器
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(key);
         rateLimiter.expire(Duration.ofHours(1));//1小时后过期
         rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), rateLimit.rateInterval(), RateIntervalUnit.SECONDS);
         //尝试获取令牌桶,获取失败就限流
-        if(!rateLimiter.tryAcquire(1)){
+        if (!rateLimiter.tryAcquire(1)) {
             throw new BusinessException(ErrorCode.TOO_MANY_REQUEST, rateLimit.message());
         }
 
 
     }
+
     private String generateRateLimitKey(JoinPoint point, RateLimit rateLimit) {
         StringBuilder keyBuilder = new StringBuilder();
         keyBuilder.append("rate_limit:");
@@ -92,6 +94,7 @@ public class RateLimitAspect {
         }
         return keyBuilder.toString();
     }
+
     private String getClientIP() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {

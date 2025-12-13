@@ -27,6 +27,9 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
@@ -35,8 +38,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,8 +54,8 @@ public class AppController {
 
     @Resource
     private AppService appService;
-    @Resource
-    @Lazy
+
+    @DubboReference
     private InnerUserService userService;
     @Resource
     private ProjectDownloadService projectDownloadService;
