@@ -20,6 +20,8 @@ import com.limou.aicodemother.model.dto.app.AppUpdateRequest;
 import com.limou.aicodemother.model.entity.App;
 import com.limou.aicodemother.model.entity.User;
 import com.limou.aicodemother.model.vo.AppVO;
+import com.limou.aicodemother.ratelimiter.annotation.RateLimit;
+import com.limou.aicodemother.ratelimiter.enums.RateLimitType;
 import com.limou.aicodemother.service.AppService;
 import com.limou.aicodemother.service.ProjectDownloadService;
 import com.limou.aicodemother.service.UserService;
@@ -66,6 +68,7 @@ public class AppController {
      */
 //, produces = MediaType.TEXT_EVENT_STREAM_VALUE可有可无但是最好加上
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, message = "请求过于频繁，请稍后再试", rate = 5, rateInterval = 1)
     public Flux<ServerSentEvent<String>> chatToGenCode(Long appId, String message, HttpServletRequest request) {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
         if (message == null) {

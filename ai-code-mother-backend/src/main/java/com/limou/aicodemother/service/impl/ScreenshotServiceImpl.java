@@ -1,13 +1,11 @@
 package com.limou.aicodemother.service.impl;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.RandomUtil;
 import com.limou.aicodemother.exception.BusinessException;
 import com.limou.aicodemother.exception.ErrorCode;
 import com.limou.aicodemother.exception.ThrowUtils;
 import com.limou.aicodemother.manager.CosManager;
-import com.limou.aicodemother.model.entity.App;
 import com.limou.aicodemother.service.ScreenshotService;
 import com.limou.aicodemother.utils.WebScreenshotUtils;
 import jakarta.annotation.Resource;
@@ -43,7 +41,8 @@ public class ScreenshotServiceImpl implements ScreenshotService {
 
     }
 
-    private String uploadScreenshotToCos(String compressedImagePath) {
+    @Override
+    public String uploadScreenshotToCos(String compressedImagePath) {
 
         ThrowUtils.throwIf(compressedImagePath == null, ErrorCode.SYSTEM_ERROR, "压缩图片路径不能为空");
         //这个key的构造 todo

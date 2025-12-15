@@ -79,6 +79,7 @@ public class ProjectDownloadServiceImpl implements ProjectDownloadService {
         ThrowUtils.throwIf(!projectDir.isDirectory(), ErrorCode.PARAMS_ERROR, "项目路径不是目录");
         log.info("开始下载项目: {}", projectPath);
         //设置Http响应头---响应类型为zip
+        response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/zip");
         response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s.zip\"", downloadFileName));
         //定义文本过滤器  ------会多次调用

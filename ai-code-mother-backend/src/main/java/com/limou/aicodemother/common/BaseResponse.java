@@ -1,7 +1,6 @@
 package com.limou.aicodemother.common;
 
 import com.limou.aicodemother.exception.ErrorCode;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

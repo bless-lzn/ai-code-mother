@@ -32,12 +32,12 @@ public class FileWriteTool extends BaseTool {
             @ToolMemoryId Long appId
     ) {
         try {
-            Path path = Paths.get(relativeFilePath);
+            Path path = Paths.get(relativeFilePath);//进行路径的转换
             if (!path.isAbsolute()) {
                 // 相对路径处理，创建基于 appId 的项目目录
                 String projectDirName = "vue_project_" + appId;
                 Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
-                path = projectRoot.resolve(relativeFilePath);
+                path = projectRoot.resolve(relativeFilePath);//进行路径拼接的逻辑
             }
             // 创建父目录（如果不存在）
             Path parentDir = path.getParent();
@@ -46,8 +46,8 @@ public class FileWriteTool extends BaseTool {
             }
             // 写入文件内容
             Files.write(path, content.getBytes(),
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING);
+                    StandardOpenOption.CREATE,//如果文件不存在则创建
+                    StandardOpenOption.TRUNCATE_EXISTING);//如果文件已经存在清空文件
             log.info("成功写入文件: {}", path.toAbsolutePath());
             // 注意要返回相对路径，不能让 AI 把文件绝对路径返回给用户
             return "文件写入成功: " + relativeFilePath;
